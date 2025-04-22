@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import Spinner from './components/Loader';
 import Loader from './components/Loader';
 import MovieCard from './components/MovieCard';
+import { useDebounce } from 'react-use';  
 
 
 const API_BASE_URL = 'https://api.themoviedb.org/3';
@@ -25,14 +26,27 @@ function App() {
   const[error, setError] = useState('');
   const [movies, setMovies] = useState([]); 
   const [loading, setLoading] = useState(false);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+
+  // Debounce the search term to avoid too many API calls
+  // This will delay the API call until the user stops typing for 500ms
+  useDebounce(
+    () => 
+      setDebouncedSearchTerm(searchTerm),
+    500,
+    [searchTerm]
+  );
 
 
-  const fetchMovies = async () => {
+  const fetchMovies = async (query = '') => {
 
     setLoading(true);
     setError('');
     try {
-      const endpoint = `${API_BASE_URL}/discover/movie?sort_by=popularity.desc`;
+      const endpoint = query 
+      ? `${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}` 
+      :
+       `${API_BASE_URL}/discover/movie?sort_by=popularity.desc`;
       const response = await fetch(endpoint, API_OPTIONS);
       if (!response.ok) {
         throw new Error('Network response was not ok');
@@ -57,9 +71,9 @@ function App() {
 
   useEffect(() => {
 
-    fetchMovies();
+    fetchMovies(debouncedSearchTerm);
 
-  },[])
+  },[debouncedSearchTerm]);
 
 
   return (
